@@ -1,0 +1,45 @@
+Test Loss:     0.7229
+Test Accuracy: 79.97%
+
+Classification Report
+============================================================
+                       precision    recall  f1-score   support
+
+              Battery       0.86      0.96      0.91        45
+             Keyboard       0.98      0.96      0.97        45
+            Microwave       0.78      0.96      0.86        45
+               Mobile       0.88      0.96      0.91        45
+                Mouse       1.00      0.96      0.98        45
+                  PCB       0.98      0.98      0.98        45
+               Player       0.93      0.87      0.90        45
+              Printer       0.88      0.84      0.86        45
+           Television       0.93      0.82      0.87        45
+      Washing Machine       0.94      0.98      0.96        45
+            batteries       0.56      0.67      0.61        15
+        cans_all_type       0.78      0.83      0.80        42
+            cardboard       0.90      0.85      0.87        61
+      ceramic_product       0.47      0.32      0.38        22
+      coffee_tea_bags       0.62      0.62      0.62        24
+              diapers       0.80      0.70      0.74        23
+              e-waste       0.78      0.98      0.86        82
+           egg_shells       0.75      0.60      0.67        20
+          food_scraps       0.61      0.48      0.54        23
+                glass       0.85      0.83      0.84        76
+     glass_containers       0.62      0.65      0.63        20
+        kitchen_waste       0.10      0.06      0.07        18
+                metal       0.83      0.87      0.85        62
+               paints       0.48      0.54      0.51        24
+                paper       0.87      0.90      0.89        90
+       paper_products       0.58      0.39      0.47        18
+           pesticides       0.59      0.59      0.59        22
+              plastic       0.79      0.84      0.81        73
+      plastic_bottles       0.58      0.55      0.56        20
+platics_bags_wrappers       0.50      0.52      0.51        21
+      sanitary_napkin       0.89      0.47      0.62        17
+     stroform_product       0.50      0.37      0.42        19
+                trash       0.64      0.64      0.64        22
+       yard_trimmings       0.67      0.74      0.70        19
+
+             accuracy                           0.80      1283
+            macro avg       0.73      0.71      0.72      1283
+         weighted avg       0.79      0.80      0.79      1283

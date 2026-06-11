@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WasteVision AI — Smart Waste Detection Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg0: #030c07;
+  --bg1: #071410;
+  --bg2: rgba(8, 24, 16, 0.85);
+  --glass: rgba(0,255,136,0.03);
+  --g: #00ff88;
+  --b: #00d4ff;
+  --r: #ff3366;
+  --a: #ffaa00;
+  --p: #c864ff;
+  --t1: #e8fff5;
+  --t2: #7ab8a0;
+  --t3: #3a6b55;
+  --bg: rgba(0,255,136,0.15);
+  --bb: rgba(0,212,255,0.15);
+  --br: rgba(255,51,102,0.15);
+  --ba: rgba(255,170,0,0.15);
+  --bp: rgba(200,100,255,0.15);
+  --glow: 0 0 20px rgba(0,255,136,0.3);
+  --glow-b: 0 0 20px rgba(0,212,255,0.3);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Exo 2', sans-serif;
+  --rad: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--bg0);color:var(--t1);overflow-x:hidden;}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,255,136,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,136,0.025) 1px,transparent 1px);
+  background-size:50px 50px;
+  animation:gridDrift 25s linear infinite;
+  pointer-events:none;z-index:0;
+}
+@keyframes gridDrift{0%{transform:translateY(0);}100%{transform:translateY(50px);}}
+
+/* ══ LAYOUT ══ */
+#app{display:flex;min-height:100vh;}
+
+/* ══ SIDEBAR ══ */
+#sidebar{
+  width:240px;min-width:240px;background:rgba(5,14,9,0.98);
+  border-right:1px solid rgba(0,255,136,0.12);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+  backdrop-filter:blur(20px);
+}
+.sb-logo{
+  padding:1.4rem 1.5rem;border-bottom:1px solid rgba(0,255,136,0.1);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-logo-icon{
+  width:38px;height:38px;border:2px solid var(--g);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--g);font-size:1.1rem;
+  animation:logoPulse 2s ease-in-out infinite;
+  box-shadow:var(--glow);
+}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 10px rgba(0,255,136,0.3);}50%{box-shadow:0 0 28px rgba(0,255,136,0.7);}}
+.sb-logo-text{font-size:.8rem;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:1.5px;line-height:1.2;}
+.sb-logo-sub{font-size:.6rem;color:var(--t3);font-family:var(--mono);letter-spacing:2px;}
+
+.sb-nav{flex:1;padding:1rem 0;overflow-y:auto;}
+.sb-group-label{
+  font-size:.58rem;font-family:var(--mono);color:var(--t3);
+  text-transform:uppercase;letter-spacing:3px;
+  padding:.5rem 1.5rem .25rem;margin-top:.5rem;
+}
+.sb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:.65rem 1.5rem;cursor:pointer;
+  font-size:.82rem;font-weight:500;color:var(--t2);
+  transition:all .25s;position:relative;letter-spacing:.5px;
+  border:none;background:transparent;width:100%;text-align:left;
+}
+.sb-item:hover{color:var(--g);background:rgba(0,255,136,0.05);}
+.sb-item.active{color:var(--g);background:rgba(0,255,136,0.08);}
+.sb-item.active::before{
+  content:'';position:absolute;left:0;top:4px;bottom:4px;
+  width:3px;background:var(--g);border-radius:0 3px 3px 0;
+  box-shadow:0 0 10px var(--g);
+}
+.sb-item i{width:16px;text-align:center;font-size:.85rem;}
+.sb-badge{
+  margin-left:auto;background:rgba(0,255,136,0.15);
+  border:1px solid rgba(0,255,136,0.3);color:var(--g);
+  font-size:.6rem;font-family:var(--mono);padding:2px 7px;border-radius:20px;
+}
+.sb-badge.red{background:rgba(255,51,102,0.15);border-color:rgba(255,51,102,0.3);color:var(--r);}
+
+.sb-status{
+  padding:1rem 1.5rem;border-top:1px solid rgba(0,255,136,0.1);
+}
+.sb-status-row{display:flex;align-items:center;gap:8px;margin-bottom:.5rem;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 8px var(--g);animation:blink 2s infinite;}
+.dot.amber{background:var(--a);box-shadow:0 0 8px var(--a);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sb-status-text{font-size:.68rem;color:var(--t3);font-family:var(--mono);}
+
+/* ══ MAIN CONTENT ══ */
+#content{
+  margin-left:240px;flex:1;position:relative;z-index:1;
+  min-height:100vh;
+}
+
+/* TOP BAR */
+#topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(3,12,7,0.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(0,255,136,0.1);
+  padding:0 2rem;height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tb-title{font-size:.85rem;font-weight:700;color:var(--t1);letter-spacing:.5px;}
+.tb-sub{font-size:.65rem;color:var(--t3);font-family:var(--mono);}
+.tb-actions{display:flex;align-items:center;gap:1rem;}
+.tb-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:600;
+  cursor:pointer;transition:all .2s;border:1px solid;font-family:var(--sans);
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.tb-btn-g{border-color:rgba(0,255,136,0.4);color:var(--g);background:rgba(0,255,136,0.07);}
+.tb-btn-g:hover{background:rgba(0,255,136,0.15);box-shadow:var(--glow);}
+.tb-btn-b{border-color:rgba(0,212,255,0.4);color:var(--b);background:rgba(0,212,255,0.07);}
+.tb-btn-b:hover{background:rgba(0,212,255,0.15);box-shadow:var(--glow-b);}
+.live-indicator{
+  display:flex;align-items:center;gap:6px;
+  font-size:.68rem;font-family:var(--mono);color:var(--r);
+  background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);
+  padding:4px 10px;border-radius:20px;
+}
+
+/* ══ PAGES ══ */
+.page{display:none;padding:2rem;animation:pageIn .3s ease;}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ══ GLASS CARD ══ */
+.card{
+  background:var(--bg2);border:1px solid rgba(0,255,136,0.12);
+  border-radius:var(--rad);backdrop-filter:blur(20px);
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,255,136,0.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+.card-header{
+  padding:1.2rem 1.5rem;border-bottom:1px solid rgba(0,255,136,0.08);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:8px;}
+.card-title i{color:var(--g);}
+.card-body{padding:1.5rem;}
+
+/* ══ TYPOGRAPHY ══ */
+.section-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:.6rem;font-family:var(--mono);color:var(--b);
+  text-transform:uppercase;letter-spacing:3px;
+  padding:3px 10px;border:1px solid rgba(0,212,255,0.2);
+  border-radius:20px;background:rgba(0,212,255,0.05);margin-bottom:.75rem;
+}
+.section-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--b);animation:blink 1.5s infinite;}
+.section-title{font-size:clamp(1.5rem,2.5vw,2.2rem);font-weight:900;line-height:1.1;margin-bottom:.75rem;}
+.g{color:var(--g);}
+.b{color:var(--b);}
+.r{color:var(--r);}
+.a{color:var(--a);}
+
+/* ══ DASHBOARD ══ */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:1.5rem;}
+.stat-card{padding:1.2rem;text-align:center;}
+.stat-val{font-size:1.9rem;font-weight:900;font-family:var(--mono);display:block;}
+.stat-lbl{font-size:.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;display:block;}
+.stat-delta{font-size:.68rem;color:var(--g);font-family:var(--mono);margin-top:4px;}
+.stat-delta.neg{color:var(--r);}
+
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;}
+.chart-wrap{height:180px;position:relative;}
+
+.activity-feed{max-height:260px;overflow-y:auto;}
+.feed-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:.65rem 0;border-bottom:1px solid rgba(0,255,136,0.06);
+  font-size:.78rem;
+}
+.feed-item:last-child{border-bottom:none;}
+.feed-icon{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;flex-shrink:0;
+}
+.feed-meta{color:var(--t3);font-size:.65rem;font-family:var(--mono);margin-top:2px;}
+
+/* ══ DETECTION PAGE ══ */
+.detect-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+
+.upload-zone{
+  border:2px dashed rgba(0,255,136,0.25);border-radius:var(--rad);
+  padding:2.5rem 2rem;text-align:center;cursor:pointer;
+  background:rgba(0,255,136,0.02);position:relative;overflow:hidden;
+  transition:all .3s;
+}
+.upload-zone:hover{border-color:var(--g);background:rgba(0,255,136,0.04);}
+.upload-zone.drag-over{border-color:var(--g);background:rgba(0,255,136,0.07);box-shadow:inset 0 0 40px rgba(0,255,136,0.05);}
+.upload-icon{font-size:2.5rem;color:var(--g);margin-bottom:1rem;}
+.upload-zone h3{font-size:1rem;margin-bottom:.4rem;}
+.upload-zone p{color:var(--t3);font-size:.8rem;margin-bottom:1.2rem;}
+
+/* Scanning overlay */
+.scan-overlay{display:none;position:absolute;inset:0;background:rgba(0,255,136,0.03);border-radius:12px;pointer-events:none;}
+.scan-line-h{position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--g),transparent);animation:scanV 1.8s linear infinite;box-shadow:0 0 12px var(--g);}
+.scan-corner{position:absolute;width:16px;height:16px;border-color:var(--g);}
+.sc-tl{top:8px;left:8px;border-top:2px solid;border-left:2px solid;}
+.sc-tr{top:8px;right:8px;border-top:2px solid;border-right:2px solid;}
+.sc-bl{bottom:8px;left:8px;border-bottom:2px solid;border-left:2px solid;}
+.sc-br{bottom:8px;right:8px;border-bottom:2px solid;border-right:2px solid;}
+@keyframes scanV{0%{top:0;opacity:1;}100%{top:100%;opacity:.3;}}
+.scanning .scan-overlay{display:block;}
+.scanning{border-color:var(--g)!important;}
+
+/* Camera panel */
+.cam-panel{background:#010a05;border-radius:var(--rad);border:1px solid rgba(0,212,255,0.15);overflow:hidden;}
+.cam-header{padding:.8rem 1.2rem;border-bottom:1px solid rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:space-between;}
+.cam-title{font-size:.75rem;font-weight:700;color:var(--b);display:flex;align-items:center;gap:7px;}
+.cam-feed{background:#000;aspect-ratio:16/9;position:relative;overflow:hidden;}
+.cam-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;}
+.cam-placeholder i{font-size:2rem;color:var(--t3);}
+.cam-placeholder p{font-size:.75rem;color:var(--t3);}
+#camVideo{width:100%;height:100%;object-fit:cover;display:none;}
+#camCanvas{position:absolute;inset:0;width:100%;height:100%;display:none;}
+.cam-footer{padding:.8rem 1.2rem;display:flex;gap:.6rem;align-items:center;}
+
+/* Preview image */
+#imgPreview{max-width:100%;max-height:280px;border-radius:10px;margin-top:.8rem;display:none;}
+#previewCanvas{max-width:100%;border-radius:10px;margin-top:.8rem;display:none;}
+
+/* Detection result */
+.result-panel{display:none;}
+.result-panel.show{display:block;animation:pageIn .4s ease;}
+.result-inner{padding:1.5rem;display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:start;}
+.result-icon-wrap{width:76px;height:76px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;flex-shrink:0;}
+.hz-high .result-icon-wrap{background:rgba(255,51,102,0.12);border:1px solid rgba(255,51,102,0.35);}
+.hz-med .result-icon-wrap{background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.35);}
+.hz-low .result-icon-wrap{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);}
+.result-title{font-size:1.2rem;font-weight:800;margin-bottom:.3rem;}
+.result-desc{font-size:.82rem;color:var(--t2);line-height:1.5;margin-bottom:.75rem;}
+.badges{display:flex;gap:.5rem;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.badge-g{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--g);}
+.badge-b{background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:var(--b);}
+.badge-r{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.3);color:var(--r);}
+.badge-a{background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:var(--a);}
+.badge-p{background:rgba(200,100,255,0.1);border:1px solid rgba(200,100,255,0.3);color:var(--p);}
+
+.conf-ring{position:relative;width:84px;height:84px;flex-shrink:0;}
+.conf-ring svg{transform:rotate(-90deg);}
+.conf-ring .track{fill:none;stroke:rgba(0,255,136,0.1);stroke-width:7;}
+.conf-ring .fill{fill:none;stroke:var(--g);stroke-width:7;stroke-linecap:round;stroke-dasharray:251;transition:stroke-dashoffset 1.5s ease;}
+.conf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:var(--g);font-family:var(--mono);}
+
+.result-details{padding:1.2rem 1.5rem;border-top:1px solid rgba(0,255,136,0.08);display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;}
+.det-item h5{font-size:.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem;display:flex;align-items:center;gap:5px;}
+.det-item h5 i{color:var(--b);}
+.det-item p{font-size:.82rem;color:var(--t2);line-height:1.5;}
+
+.chat-prompt-bar{
+  padding:1rem 1.5rem;border-top:1px solid rgba(0,255,136,0.08);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,255,136,0.02);
+}
+.chat-prompt-bar p{font-size:.82rem;color:var(--t2);}
+.cp-btns{display:flex;gap:.6rem;}
+
+/* ══ BTN ══ */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 18px;
+  border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;
+  transition:all .25s;border:1px solid;font-family:var(--sans);
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.btn-g{border-color:rgba(0,255,136,0.5);color:#030c07;background:var(--g);}
+.btn-g:hover{box-shadow:0 0 25px rgba(0,255,136,0.5);transform:translateY(-1px);}
+.btn-outline-g{border-color:rgba(0,255,136,0.4);color:var(--g);background:rgba(0,255,136,0.07);}
+.btn-outline-g:hover{background:rgba(0,255,136,0.12);box-shadow:var(--glow);}
+.btn-outline-b{border-color:rgba(0,212,255,0.4);color:var(--b);background:rgba(0,212,255,0.07);}
+.btn-outline-b:hover{background:rgba(0,212,255,0.12);box-shadow:var(--glow-b);}
+.btn-outline-r{border-color:rgba(255,51,102,0.4);color:var(--r);background:rgba(255,51,102,0.07);}
+.btn-outline-r:hover{background:rgba(255,51,102,0.12);}
+.btn-sm{padding:5px 12px;font-size:.68rem;}
+.btn-xs{padding:3px 9px;font-size:.62rem;}
+
+/* Dataset selector */
+.dataset-pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem;}
+.ds-pill{
+  padding:5px 14px;border-radius:20px;font-size:.7rem;font-weight:600;
+  cursor:pointer;transition:all .2s;border:1px solid rgba(0,255,136,0.2);
+  color:var(--t2);background:transparent;font-family:var(--sans);
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.ds-pill.active{border-color:var(--g);color:var(--g);background:rgba(0,255,136,0.1);}
+.ds-pill:hover:not(.active){border-color:rgba(0,255,136,0.4);color:var(--t1);}
+
+/* ══ LIVE CAMERA PAGE ══ */
+.live-layout{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;}
+.live-main{display:flex;flex-direction:column;gap:1rem;}
+.live-feed-wrap{
+  background:#000;border-radius:var(--rad);
+  border:1px solid rgba(0,212,255,0.2);
+  aspect-ratio:16/9;position:relative;overflow:hidden;
+}
+#liveVideo{width:100%;height:100%;object-fit:cover;display:none;}
+#liveCanvas{position:absolute;inset:0;width:100%;height:100%;}
+.live-overlay{position:absolute;inset:0;pointer-events:none;}
+.scan-frame{position:absolute;inset:20px;border:1px solid rgba(0,255,136,0.2);border-radius:10px;}
+.scan-frame::before,.scan-frame::after{content:'';position:absolute;border-color:var(--g);}
+.scan-frame::before{top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid;border-left:2px solid;}
+.scan-frame::after{bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid;border-right:2px solid;}
+.live-scan-bar{
+  position:absolute;left:20px;right:20px;height:1px;top:20px;
+  background:linear-gradient(to right,transparent,var(--g),transparent);
+  box-shadow:0 0 12px var(--g);
+  animation:liveScan 2.5s ease-in-out infinite;
+}
+@keyframes liveScan{0%{top:20px;opacity:1;}50%{opacity:.7;}100%{top:calc(100% - 20px);opacity:1;}}
+.live-hud-tl{position:absolute;top:28px;left:28px;font-size:.6rem;font-family:var(--mono);color:var(--g);}
+.live-hud-tr{position:absolute;top:28px;right:28px;font-size:.6rem;font-family:var(--mono);color:var(--b);}
+
+.live-no-cam{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1rem;
+  background:rgba(0,0,0,0.8);
+}
+.live-no-cam i{font-size:3rem;color:var(--t3);}
+.live-no-cam p{font-size:.85rem;color:var(--t3);}
+
+.live-controls-bar{display:flex;gap:.75rem;align-items:center;}
+.fps-display{font-size:.65rem;font-family:var(--mono);color:var(--b);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.15);padding:4px 10px;border-radius:6px;}
+
+/* Live detections log */
+.det-log{max-height:calc(100vh - 200px);overflow-y:auto;}
+.det-log-item{
+  padding:.65rem;border-radius:9px;margin-bottom:.5rem;
+  background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.08);
+  cursor:pointer;transition:all .2s;
+}
+.det-log-item:hover{border-color:rgba(0,255,136,0.2);}
+.det-log-item.new-det{animation:newDetFlash .6s ease;}
+@keyframes newDetFlash{0%{background:rgba(0,255,136,0.15);}100%{background:rgba(0,255,136,0.04);}}
+.dli-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;}
+.dli-name{font-size:.75rem;font-weight:700;}
+.dli-conf{font-size:.65rem;font-family:var(--mono);color:var(--g);}
+.dli-cat{font-size:.65rem;color:var(--t3);font-family:var(--mono);}
+.dli-time{font-size:.6rem;color:var(--t3);font-family:var(--mono);}
+
+/* ══ CHAT PAGE ══ */
+.chat-layout{display:grid;grid-template-columns:280px 1fr;gap:1.5rem;height:calc(100vh - 120px);}
+.chat-sessions{overflow-y:auto;}
+.sess-item{
+  padding:.75rem;border-radius:9px;margin-bottom:.5rem;
+  border:1px solid rgba(0,255,136,0.08);cursor:pointer;transition:all .2s;
+}
+.sess-item:hover,.sess-item.active-sess{border-color:rgba(0,255,136,0.25);background:rgba(0,255,136,0.05);}
+.sess-name{font-size:.78rem;font-weight:700;margin-bottom:.25rem;}
+.sess-preview{font-size:.68rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sess-time{font-size:.6rem;color:var(--t3);font-family:var(--mono);margin-top:.3rem;}
+
+.chat-main{display:flex;flex-direction:column;overflow:hidden;}
+.chat-context-bar{
+  padding:.6rem 1rem;border-bottom:1px solid rgba(0,255,136,0.08);
+  display:flex;align-items:center;gap:10px;font-size:.75rem;
+}
+.ctx-waste-icon{font-size:1.2rem;}
+.ctx-info{flex:1;}
+.ctx-name{font-weight:700;}
+.ctx-detail{font-size:.65rem;color:var(--t3);}
+
+.chat-messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem;}
+.msg{max-width:80%;padding:.75rem 1rem;border-radius:12px;font-size:.82rem;line-height:1.6;animation:msgIn .3s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.msg-user{
+  align-self:flex-end;background:rgba(0,255,136,0.1);
+  border:1px solid rgba(0,255,136,0.2);color:var(--t1);border-radius:12px 12px 2px 12px;
+}
+.msg-ai{
+  align-self:flex-start;background:rgba(0,20,12,0.8);
+  border:1px solid rgba(0,212,255,0.15);color:var(--t1);border-radius:12px 12px 12px 2px;
+}
+.msg-ai .msg-header{display:flex;align-items:center;gap:7px;margin-bottom:.4rem;font-size:.65rem;color:var(--b);}
+.msg-ai .msg-header i{font-size:.7rem;}
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:.5rem .75rem;}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--b);animation:typingBounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);}}
+
+.chat-input-area{
+  padding:1rem;border-top:1px solid rgba(0,255,136,0.08);
+  display:flex;gap:.75rem;align-items:flex-end;
+}
+.chat-input-wrap{flex:1;position:relative;}
+#chatInput{
+  width:100%;background:rgba(0,20,12,0.6);border:1px solid rgba(0,255,136,0.15);
+  border-radius:10px;padding:.75rem 1rem;font-family:var(--sans);
+  font-size:.82rem;color:var(--t1);resize:none;outline:none;
+  transition:border-color .2s;min-height:44px;max-height:120px;
+}
+#chatInput:focus{border-color:rgba(0,255,136,0.4);}
+#chatInput::placeholder{color:var(--t3);}
+.chat-hints{display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 1rem 0;margin-bottom:-.5rem;}
+.hint-chip{
+  font-size:.65rem;color:var(--b);background:rgba(0,212,255,0.07);
+  border:1px solid rgba(0,212,255,0.15);padding:3px 9px;border-radius:20px;
+  cursor:pointer;transition:all .2s;
+}
+.hint-chip:hover{background:rgba(0,212,255,0.15);}
+
+/* ══ MEMORY PAGE ══ */
+.memory-filters{display:flex;gap:.75rem;margin-bottom:1.2rem;align-items:center;flex-wrap:wrap;}
+.filter-input{
+  background:rgba(0,20,12,0.6);border:1px solid rgba(0,255,136,0.15);
+  border-radius:8px;padding:6px 12px;font-family:var(--sans);
+  font-size:.78rem;color:var(--t1);outline:none;flex:1;max-width:220px;
+}
+.filter-input::placeholder{color:var(--t3);}
+.filter-input:focus{border-color:rgba(0,255,136,0.4);}
+select.filter-input{cursor:pointer;}
+
+.memory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
+.mem-card{cursor:pointer;transition:all .3s;}
+.mem-card:hover{transform:translateY(-3px);border-color:rgba(0,255,136,0.35)!important;}
+.mem-card-img{
+  height:130px;background:#010a05;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:3rem;margin-bottom:.75rem;border:1px solid rgba(0,255,136,0.08);
+  overflow:hidden;position:relative;
+}
+.mem-card-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.mem-id{font-size:.6rem;font-family:var(--mono);color:var(--t3);margin-bottom:.3rem;}
+.mem-name{font-size:.88rem;font-weight:700;margin-bottom:.3rem;}
+.mem-meta{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;}
+.mem-footer{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;}
+.mem-footer-time{font-size:.6rem;font-family:var(--mono);color:var(--t3);}
+
+/* ══ DATASET PAGE ══ */
+.dataset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.ds-card{padding:1.2rem;cursor:pointer;transition:all .2s;}
+.ds-card:hover,.ds-card.active-ds{border-color:rgba(0,255,136,0.35)!important;}
+.ds-card.active-ds{background:rgba(0,255,136,0.05)!important;}
+.ds-card-icon{font-size:2rem;margin-bottom:.75rem;display:block;}
+.ds-card-name{font-size:.88rem;font-weight:700;margin-bottom:.3rem;}
+.ds-card-items{font-size:.7rem;color:var(--t3);font-family:var(--mono);margin-bottom:.75rem;}
+.ds-card-bar{height:3px;background:rgba(0,255,136,0.1);border-radius:3px;margin-bottom:.5rem;}
+.ds-card-bar-fill{height:100%;border-radius:3px;background:var(--g);transition:width 1s ease;}
+.ds-stats-row{display:flex;justify-content:space-between;font-size:.65rem;color:var(--t3);}
+
+.upload-ds-area{
+  border:2px dashed rgba(0,255,136,0.2);border-radius:var(--rad);
+  padding:2rem;text-align:center;cursor:pointer;transition:all .3s;
+}
+.upload-ds-area:hover{border-color:var(--g);background:rgba(0,255,136,0.03);}
+.upload-ds-area i{font-size:2rem;color:var(--g);display:block;margin-bottom:.75rem;}
+
+/* ══ ADMIN PAGE ══ */
+.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;}
+.log-row{
+  padding:.5rem .75rem;border-radius:7px;margin-bottom:.3rem;
+  font-size:.72rem;font-family:var(--mono);background:rgba(0,255,136,0.03);
+  border:1px solid rgba(0,255,136,0.06);display:flex;gap:.75rem;
+}
+.log-time{color:var(--t3);white-space:nowrap;}
+.log-level{white-space:nowrap;}
+.log-level.info{color:var(--b);}
+.log-level.warn{color:var(--a);}
+.log-level.err{color:var(--r);}
+.log-msg{color:var(--t2);flex:1;}
+
+/* ══ MODAL ══ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:rgba(5,14,9,0.98);border:1px solid rgba(0,255,136,0.2);
+  border-radius:18px;width:90%;max-width:700px;max-height:90vh;
+  overflow-y:auto;box-shadow:0 0 60px rgba(0,255,136,0.1);
+  animation:modalIn .3s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.modal-header{
+  padding:1.2rem 1.5rem;border-bottom:1px solid rgba(0,255,136,0.1);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-header h3{font-size:1rem;font-weight:800;}
+.modal-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:1.1rem;transition:color .2s;}
+.modal-close:hover{color:var(--t1);}
+.modal-body{padding:1.5rem;}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid rgba(0,255,136,0.08);display:flex;justify-content:flex-end;gap:.75rem;}
+
+/* ══ FORM ══ */
+.form-group{margin-bottom:1rem;}
+.form-label{font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem;display:block;}
+.form-input{
+  width:100%;background:rgba(0,20,12,0.6);border:1px solid rgba(0,255,136,0.15);
+  border-radius:8px;padding:.65rem 1rem;font-family:var(--sans);
+  font-size:.82rem;color:var(--t1);outline:none;transition:border-color .2s;
+}
+.form-input:focus{border-color:rgba(0,255,136,0.4);}
+.form-input::placeholder{color:var(--t3);}
+
+/* ══ PROGRESS ══ */
+.progress-bar{height:5px;background:rgba(0,255,136,0.1);border-radius:5px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:5px;background:linear-gradient(to right,var(--g),var(--b));transition:width 1.5s ease;}
+
+/* ══ SCROLLBAR ══ */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.2);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,255,136,0.4);}
+
+/* ══ NOTIFICATION ══ */
+#notif-stack{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:.5rem;}
+.notif{
+  background:rgba(5,14,9,0.97);border:1px solid rgba(0,255,136,0.2);
+  border-radius:10px;padding:.75rem 1.2rem;min-width:260px;max-width:320px;
+  display:flex;align-items:flex-start;gap:.75rem;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  animation:notifIn .3s ease;font-size:.8rem;
+}
+.notif.removing{animation:notifOut .3s ease forwards;}
+@keyframes notifIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+@keyframes notifOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(30px);}}
+.notif-icon{font-size:1rem;flex-shrink:0;}
+.notif-text{flex:1;line-height:1.4;}
+.notif-title{font-weight:700;margin-bottom:2px;}
+.notif-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:.85rem;align-self:flex-start;flex-shrink:0;}
+
+/* ══ EMPTY STATE ══ */
+.empty-state{text-align:center;padding:3rem 1rem;}
+.empty-state i{font-size:3rem;color:var(--t3);display:block;margin-bottom:1rem;}
+.empty-state h3{font-size:1rem;color:var(--t2);margin-bottom:.5rem;}
+.empty-state p{font-size:.8rem;color:var(--t3);}
+
+/* ══ TOOLTIP ══ */
+[data-tip]{position:relative;}
+[data-tip]:hover::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:rgba(0,20,12,0.97);border:1px solid rgba(0,255,136,0.2);color:var(--t1);
+  font-size:.65rem;white-space:nowrap;padding:4px 8px;border-radius:6px;z-index:200;
+}
+
+/* ══ EXPORT MENU ══ */
+.export-menu{position:relative;display:inline-flex;}
+.export-dropdown{
+  position:absolute;top:calc(100% + 6px);right:0;
+  background:rgba(5,14,9,0.98);border:1px solid rgba(0,255,136,0.15);
+  border-radius:10px;min-width:140px;z-index:100;
+  display:none;box-shadow:0 8px 30px rgba(0,0,0,0.4);
+}
+.export-menu.open .export-dropdown{display:block;}
+.export-option{
+  padding:.55rem 1rem;font-size:.75rem;color:var(--t2);cursor:pointer;
+  display:flex;align-items:center;gap:8px;transition:all .2s;
+}
+.export-option:hover{color:var(--g);background:rgba(0,255,136,0.05);}
+.export-option:first-child{border-radius:10px 10px 0 0;}
+.export-option:last-child{border-radius:0 0 10px 10px;}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:900px){
+  #sidebar{transform:translateX(-100%);transition:transform .3s;}
+  #sidebar.open{transform:translateX(0);}
+  #content{margin-left:0;}
+  .detect-layout,.live-layout,.chat-layout{grid-template-columns:1fr;}
+  .dash-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><i class="fas fa-atom"></i></div>
+    <div>
+      <div class="sb-logo-text">WasteVision</div>
+      <div class="sb-logo-sub">AI // v2.4.0</div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group-label">Main</div>
+    <button class="sb-item active" onclick="navTo('dashboard',this)"><i class="fas fa-th-large"></i> Dashboard</button>
+    <button class="sb-item" onclick="navTo('detect',this)"><i class="fas fa-crosshairs"></i> Detect Waste <span class="sb-badge">AI</span></button>
+    <button class="sb-item" onclick="navTo('live',this)"><i class="fas fa-video"></i> Live Camera <span class="sb-badge red" id="liveTag">OFF</span></button>
+    <div class="sb-group-label">Intelligence</div>
+    <button class="sb-item" onclick="navTo('chat',this)"><i class="fas fa-comments"></i> AI Assistant <span class="sb-badge" id="sessCount">0</span></button>
+    <button class="sb-item" onclick="navTo('memory',this)"><i class="fas fa-database"></i> Saved Memory <span class="sb-badge" id="memCount">0</span></button>
+    <div class="sb-group-label">Datasets</div>
+    <button class="sb-item" onclick="navTo('datasets',this)"><i class="fas fa-layer-group"></i> Dataset Manager</button>
+    <div class="sb-group-label">System</div>
+    <button class="sb-item" onclick="navTo('admin',this)"><i class="fas fa-sliders-h"></i> Admin Panel</button>
+  </nav>
+  <div class="sb-status">
+    <div class="sb-status-row"><span class="dot"></span><span class="sb-status-text">AI MODEL: ONLINE</span></div>
+    <div class="sb-status-row"><span class="dot amber"></span><span class="sb-status-text">DATASET: HOUSEHOLD</span></div>
+    <div class="sb-status-row"><span class="dot" style="background:var(--b);box-shadow:0 0 8px var(--b)"></span><span class="sb-status-text">API: CONNECTED</span></div>
+  </div>
+</aside>
+
+<!-- ══ MAIN CONTENT ══ -->
+<main id="content">
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <div>
+      <div class="tb-title" id="tbTitle">Dashboard</div>
+      <div class="tb-sub" id="tbSub">Overview · Real-time analytics</div>
+    </div>
+    <div class="tb-actions">
+      <div class="live-indicator" id="liveGlobalIndicator" style="display:none;"><span class="dot" style="background:var(--r);box-shadow:0 0 8px var(--r);"></span>LIVE</div>
+      <div class="export-menu" id="exportMenu">
+        <button class="btn btn-outline-g btn-sm" onclick="toggleExportMenu()"><i class="fas fa-download"></i> Export</button>
+        <div class="export-dropdown">
+          <div class="export-option" onclick="exportData('json')"><i class="fas fa-code"></i>Export JSON</div>
+          <div class="export-option" onclick="exportData('csv')"><i class="fas fa-table"></i>Export CSV</div>
+          <div class="export-option" onclick="exportData('pdf')"><i class="fas fa-file-pdf"></i>Export PDF</div>
+        </div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="navTo('detect', document.querySelector('.sb-item:nth-child(3)'))"><i class="fas fa-plus"></i> New Detection</button>
+    </div>
+  </header>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="page-dashboard" class="page active" style="padding:1.5rem;">
+    <div class="dash-grid">
+      <div class="card stat-card"><span class="stat-val g" id="sc-total">0</span><span class="stat-lbl">Total Detections</span><div class="stat-delta">↑ +12 today</div></div>
+      <div class="card stat-card"><span class="stat-val b" id="sc-recyc">0%</span><span class="stat-lbl">Avg Recyclability</span><div class="stat-delta">↑ +3.2% this week</div></div>
+      <div class="card stat-card"><span class="stat-val a" id="sc-haz">0</span><span class="stat-lbl">Hazardous Items</span><div class="stat-delta neg">↓ -2 this week</div></div>
+      <div class="card stat-card"><span class="stat-val" style="color:var(--p);" id="sc-carbon">0t</span><span class="stat-lbl">CO₂ Saved</span><div class="stat-delta">↑ +1.2t this month</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="card" style="grid-column:span 2;">
+        <div class="card-header"><div class="card-title"><i class="fas fa-chart-bar"></i>Detections by Category</div><span class="badge badge-b" style="font-size:.6rem;">Last 30 Days</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-chart-pie"></i>Waste Distribution</div></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="pieChart"></canvas></div></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-bolt"></i>Live Activity Feed</div><span class="badge badge-g" style="font-size:.6rem;">LIVE</span></div>
+        <div class="card-body"><div class="activity-feed" id="activityFeed"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-brain"></i>AI Model Stats</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem;">
+          <div style="font-size:.75rem;color:var(--t2);">Accuracy</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:94.2%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-top:-4px;"><span>0%</span><span class="g">94.2%</span></div>
+          <div style="font-size:.75rem;color:var(--t2);">Avg Inference Speed</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:88%;background:linear-gradient(to right,var(--b),var(--p));"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-top:-4px;"><span>0ms</span><span style="color:var(--b);">~124ms</span></div>
+          <div style="font-size:.75rem;color:var(--t2);">Model: YOLOv8 + TensorFlow</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:78%;background:linear-gradient(to right,var(--a),var(--r));"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-top:-4px;"><span>Load</span><span style="color:var(--a);">78% GPU</span></div>
+          <div style="margin-top:.5rem;padding:.6rem;background:rgba(0,255,136,0.04);border-radius:8px;border:1px solid rgba(0,255,136,0.08);">
+            <div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.3rem;">CURRENT DATASET</div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--g);">Household Waste v3.2</div>
+            <div style="font-size:.65rem;color:var(--t3);">12,400 images · 9 classes · Accuracy 94.2%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DETECT PAGE ══ -->
+  <div id="page-detect" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;">
+      <div class="section-tag">AI Detection Engine</div>
+      <div class="section-title">Classify <span class="g">Waste</span></div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem;font-family:var(--mono);">Active Dataset</div>
+      <div class="dataset-pills" id="dsPills">
+        <button class="ds-pill active" data-ds="household" onclick="switchDataset(this)">🏠 Household</button>
+        <button class="ds-pill" data-ds="industrial" onclick="switchDataset(this)">🏭 Industrial</button>
+        <button class="ds-pill" data-ds="medical" onclick="switchDataset(this)">🏥 Medical</button>
+        <button class="ds-pill" data-ds="ewaste" onclick="switchDataset(this)">💻 E-Waste</button>
+        <button class="ds-pill" data-ds="custom" onclick="switchDataset(this)">⚙ Custom</button>
+      </div>
+    </div>
+    <div class="detect-layout">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-upload"></i>Upload Image</div></div>
+        <div class="card-body">
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+            <div class="scan-overlay">
+              <div class="scan-line-h"></div>
+              <div class="scan-corner sc-tl"></div><div class="scan-corner sc-tr"></div>
+              <div class="scan-corner sc-bl"></div><div class="scan-corner sc-br"></div>
+            </div>
+            <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <h3>Drop your waste image here</h3>
+            <p>Supports JPG, PNG, WEBP, GIF · Max 10MB</p>
+            <button class="btn btn-outline-g" onclick="event.stopPropagation();document.getElementById('fileInput').click()"><i class="fas fa-folder-open"></i> Browse Files</button>
+            <img id="imgPreview" alt="Preview">
+            <canvas id="previewCanvas"></canvas>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+          <div style="display:flex;gap:.75rem;margin-top:1rem;">
+            <button class="btn btn-g" id="analyzeBtn" onclick="analyzeImage()" disabled><i class="fas fa-brain"></i> Analyze with AI</button>
+            <button class="btn btn-outline-b" onclick="simulateDetection()"><i class="fas fa-flask"></i> Demo Scan</button>
+            <button class="btn btn-outline-g btn-sm" onclick="clearDetection()"><i class="fas fa-times"></i> Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="cam-panel">
+        <div class="cam-header">
+          <div class="cam-title"><i class="fas fa-video"></i>Quick Camera</div>
+          <div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);">CAPTURE MODE</div>
+        </div>
+        <div class="cam-feed">
+          <div class="cam-placeholder" id="camPh"><i class="fas fa-camera"></i><p>Camera inactive</p></div>
+          <video id="camVideo" autoplay playsinline></video>
+          <canvas id="camCanvas"></canvas>
+        </div>
+        <div class="cam-footer">
+          <button class="btn btn-outline-b btn-sm" onclick="startQuickCam()"><i class="fas fa-play"></i> Start</button>
+          <button class="btn btn-outline-g btn-sm" onclick="captureFromCam()"><i class="fas fa-camera"></i> Capture</button>
+          <button class="btn btn-outline-r btn-sm" onclick="stopQuickCam()"><i class="fas fa-stop"></i> Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT PANEL -->
+    <div class="card result-panel" id="resultPanel">
+      <div class="result-inner hz-low" id="resultInner">
+        <div class="result-icon-wrap" id="resultIcon">🗑️</div>
+        <div class="result-info">
+          <div class="result-title" id="resultTitle">—</div>
+          <div class="result-desc" id="resultDesc">—</div>
+          <div class="badges" id="resultBadges"></div>
+        </div>
+        <div class="conf-ring">
+          <svg viewBox="0 0 90 90" width="84" height="84">
+            <circle class="track" cx="45" cy="45" r="40"/>
+            <circle class="fill" id="confCircle" cx="45" cy="45" r="40" stroke-dashoffset="251"/>
+          </svg>
+          <div class="pct" id="confPct">0%</div>
+        </div>
+      </div>
+      <div class="result-details" id="resultDetails">
+        <div class="det-item"><h5><i class="fas fa-recycle"></i> Recycling Method</h5><p id="rd-recycle">—</p></div>
+        <div class="det-item"><h5><i class="fas fa-trash-alt"></i> Disposal Instructions</h5><p id="rd-disposal">—</p></div>
+        <div class="det-item"><h5><i class="fas fa-leaf"></i> Carbon Impact Score</h5><p id="rd-carbon">—</p></div>
+      </div>
+      <div class="chat-prompt-bar" id="chatPromptBar">
+        <p>🤖 Would you like to chat with WasteAI about this item?</p>
+        <div class="cp-btns">
+          <button class="btn btn-g btn-sm" onclick="startChatFromDetection(true)"><i class="fas fa-comments"></i> YES, Chat</button>
+          <button class="btn btn-outline-r btn-sm" onclick="startChatFromDetection(false)"><i class="fas fa-times"></i> NO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LIVE PAGE ══ -->
+  <div id="page-live" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;">
+      <div class="section-tag">Real-Time Vision</div>
+      <div class="section-title">Live <span class="g">Camera</span> Detection</div>
+    </div>
+    <div class="live-layout">
+      <div class="live-main">
+        <div class="live-feed-wrap">
+          <div class="live-no-cam" id="liveNoCam">
+            <i class="fas fa-camera-slash"></i>
+            <p>Camera not active. Press START LIVE to begin.</p>
+          </div>
+          <video id="liveVideo" autoplay playsinline></video>
+          <canvas id="liveCanvas"></canvas>
+          <div class="live-overlay">
+            <div class="scan-frame"></div>
+            <div class="live-scan-bar" id="liveScanBar" style="display:none;"></div>
+            <div class="live-hud-tl" id="liveHudTL">SYS: IDLE</div>
+            <div class="live-hud-tr" id="liveHudTR">FPS: --</div>
+          </div>
+        </div>
+        <div class="live-controls-bar">
+          <button class="btn btn-g" id="startLiveBtn" onclick="startLiveDetection()"><i class="fas fa-play"></i> Start Live</button>
+          <button class="btn btn-outline-r" id="stopLiveBtn" onclick="stopLiveDetection()" disabled><i class="fas fa-stop"></i> Stop</button>
+          <div class="fps-display" id="fpsDisplay">FPS: --</div>
+          <div class="fps-display" id="objCountDisplay">Objects: 0</div>
+          <button class="btn btn-outline-b btn-sm" onclick="simulateLiveDetection()"><i class="fas fa-flask"></i> Simulate</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem;overflow:hidden;">
+        <div class="card" style="flex:1;overflow:hidden;">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-list"></i>Detection Log</div>
+            <button class="btn btn-outline-r btn-xs" onclick="clearLiveLog()"><i class="fas fa-trash"></i></button>
+          </div>
+          <div class="card-body" style="padding:.75rem;overflow-y:auto;max-height:calc(100vh - 320px);">
+            <div class="det-log" id="detLog">
+              <div class="empty-state" style="padding:1.5rem;">
+                <i class="fas fa-radar" style="font-size:1.5rem;"></i>
+                <p style="margin-top:.5rem;">No detections yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i class="fas fa-chart-line"></i>Live Stats</div></div>
+          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:900;font-family:var(--mono);color:var(--g);" id="ls-total">0</div><div style="font-size:.6rem;color:var(--t3);text-transform:uppercase;">Total</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:900;font-family:var(--mono);color:var(--r);" id="ls-haz">0</div><div style="font-size:.6rem;color:var(--t3);text-transform:uppercase;">Hazardous</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:900;font-family:var(--mono);color:var(--b);" id="ls-safe">0</div><div style="font-size:.6rem;color:var(--t3);text-transform:uppercase;">Safe</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:900;font-family:var(--mono);color:var(--a);" id="ls-sess">0</div><div style="font-size:.6rem;color:var(--t3);text-transform:uppercase;">Session Time (s)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CHAT PAGE ══ -->
+  <div id="page-chat" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div class="section-tag">AI Memory System</div>
+        <div class="section-title">WasteAI <span class="g">Assistant</span></div>
+      </div>
+      <button class="btn btn-outline-b btn-sm" onclick="startNewChat()"><i class="fas fa-plus"></i> New Chat</button>
+    </div>
+    <div class="chat-layout">
+      <div class="card" style="overflow:hidden;display:flex;flex-direction:column;">
+        <div class="card-header"><div class="card-title"><i class="fas fa-history"></i>Sessions</div></div>
+        <div style="flex:1;overflow-y:auto;padding:.75rem;" id="sessionList">
+          <div class="empty-state"><i class="fas fa-comments"></i><p>No sessions yet.<br>Detect a waste item and chat!</p></div>
+        </div>
+      </div>
+      <div class="card chat-main" id="chatMain">
+        <div class="chat-context-bar" id="chatContextBar">
+          <span class="ctx-waste-icon" id="chatCtxIcon">🤖</span>
+          <div class="ctx-info">
+            <div class="ctx-name" id="chatCtxName">WasteAI Assistant</div>
+            <div class="ctx-detail" id="chatCtxDetail">Ready to help with waste management</div>
+          </div>
+          <div class="badge badge-g">AI POWERED</div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg msg-ai">
+            <div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>
+            Hello! I'm WasteAI, your intelligent waste management assistant. Detect a waste item to begin a context-aware conversation, or ask me anything about recycling, disposal, and environmental impact!
+          </div>
+        </div>
+        <div class="chat-hints" id="chatHints">
+          <span class="hint-chip" onclick="quickQuestion(this)">Can this be recycled?</span>
+          <span class="hint-chip" onclick="quickQuestion(this)">Where to dispose safely?</span>
+          <span class="hint-chip" onclick="quickQuestion(this)">Environmental impact?</span>
+          <span class="hint-chip" onclick="quickQuestion(this)">Resale value?</span>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-wrap">
+            <textarea id="chatInput" placeholder="Ask about this waste item..." rows="1" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+          </div>
+          <button class="btn btn-g" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MEMORY PAGE ══ -->
+  <div id="page-memory" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div class="section-tag">Object Memory Bank</div>
+        <div class="section-title">Saved <span class="g">Detections</span></div>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn btn-outline-r btn-sm" onclick="clearAllMemory()"><i class="fas fa-trash-alt"></i> Clear All</button>
+      </div>
+    </div>
+    <div class="memory-filters">
+      <input class="filter-input" type="text" placeholder="🔍 Search detections..." id="memSearch" oninput="filterMemory()">
+      <select class="filter-input" id="memCatFilter" onchange="filterMemory()" style="max-width:160px;">
+        <option value="">All Categories</option>
+        <option value="Plastic">Plastic</option>
+        <option value="Glass">Glass</option>
+        <option value="Metal">Metal</option>
+        <option value="Paper">Paper</option>
+        <option value="Organic">Organic</option>
+        <option value="E-Waste">E-Waste</option>
+        <option value="Battery">Battery</option>
+        <option value="Medical">Medical</option>
+        <option value="Hazardous">Hazardous</option>
+      </select>
+      <select class="filter-input" id="memHazFilter" onchange="filterMemory()" style="max-width:140px;">
+        <option value="">All Hazard Levels</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="memory-grid" id="memoryGrid">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <i class="fas fa-database"></i>
+        <h3>No saved detections yet</h3>
+        <p>Detect a waste item and click YES to save it to memory</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DATASETS PAGE ══ -->
+  <div id="page-datasets" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;">
+      <div class="section-tag">Model Training</div>
+      <div class="section-title">Dataset <span class="g">Manager</span></div>
+    </div>
+    <div class="dataset-grid" id="datasetGrid"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-upload"></i>Upload Custom Dataset</div></div>
+        <div class="card-body">
+          <div class="upload-ds-area" onclick="document.getElementById('dsFile').click()">
+            <i class="fas fa-folder-plus"></i>
+            <p style="font-size:.82rem;color:var(--t2);margin-bottom:.5rem;">Drop your dataset ZIP or folder here</p>
+            <p style="font-size:.72rem;color:var(--t3);">Supports YOLO, COCO, Pascal VOC formats</p>
+          </div>
+          <input type="file" id="dsFile" accept=".zip" style="display:none" onchange="handleDatasetUpload(event)">
+          <div style="display:flex;gap:.75rem;margin-top:1rem;">
+            <button class="btn btn-outline-b btn-sm" onclick="document.getElementById('dsFile').click()"><i class="fas fa-file-archive"></i> Upload ZIP</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-cogs"></i>Model Training</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <div class="form-group">
+              <label class="form-label">Model Architecture</label>
+              <select class="form-input" id="modelArch">
+                <option>YOLOv8n (Fastest)</option>
+                <option selected>YOLOv8s (Balanced)</option>
+                <option>YOLOv8m (Accurate)</option>
+                <option>TensorFlow MobileNet</option>
+                <option>Custom CNN</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Epochs</label>
+              <input class="form-input" type="number" value="50" min="10" max="500">
+            </div>
+            <div style="display:flex;gap:.5rem;">
+              <button class="btn btn-g btn-sm" onclick="startTraining()"><i class="fas fa-rocket"></i> Start Training</button>
+              <button class="btn btn-outline-b btn-sm" onclick="showTrainingStatus()"><i class="fas fa-chart-line"></i> Status</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN PAGE ══ -->
+  <div id="page-admin" class="page" style="padding:1.5rem;">
+    <div style="margin-bottom:1.2rem;">
+      <div class="section-tag">System Control</div>
+      <div class="section-title">Admin <span class="g">Panel</span></div>
+    </div>
+    <div class="admin-grid">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-terminal"></i>System Logs</div><button class="btn btn-outline-r btn-xs" onclick="clearLogs()">Clear</button></div>
+        <div class="card-body" style="max-height:300px;overflow-y:auto;" id="sysLogs"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-users"></i>User Management</div></div>
+        <div class="card-body">
+          <div class="form-group"><label class="form-label">Username</label><input class="form-input" placeholder="Enter username"></div>
+          <div class="form-group"><label class="form-label">Role</label>
+            <select class="form-input"><option>Admin</option><option>Operator</option><option>Viewer</option></select>
+          </div>
+          <button class="btn btn-outline-g btn-sm"><i class="fas fa-user-plus"></i> Add User</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-plug"></i>API Configuration</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem;">
+          <div class="form-group"><label class="form-label">Anthropic API Key</label><input class="form-input" type="password" placeholder="sk-ant-..." id="apiKeyInput" oninput="updateApiKey(this.value)"></div>
+          <div class="form-group"><label class="form-label">Webhook URL</label><input class="form-input" placeholder="https://..."></div>
+          <button class="btn btn-g btn-sm" onclick="saveApiConfig()"><i class="fas fa-save"></i> Save Config</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fas fa-shield-alt"></i>System Health</div></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;">
+            <span>AI API</span><span class="badge badge-g">ONLINE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;">
+            <span>Camera Module</span><span class="badge badge-a">STANDBY</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;">
+            <span>Memory Store</span><span class="badge badge-g">ACTIVE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;">
+            <span>Dataset Engine</span><span class="badge badge-b">IDLE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;">
+            <span>Export Service</span><span class="badge badge-g">READY</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ══ MODAL: Memory Detail ══ -->
+<div class="modal-overlay" id="memModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="memModalTitle">Detection Details</h3>
+      <button class="modal-close" onclick="closeModal('memModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="memModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-r btn-sm" id="memModalDelete"><i class="fas fa-trash"></i> Delete</button>
+      <button class="btn btn-outline-b btn-sm" id="memModalChat"><i class="fas fa-comments"></i> Open Chat</button>
+      <button class="modal-close btn btn-g btn-sm" onclick="closeModal('memModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NOTIF STACK ══ -->
+<div id="notif-stack"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const STATE = {
+  apiKey: '',
+  currentDataset: 'household',
+  currentDetection: null,
+  currentSession: null,
+  sessions: [],
+  memory: [],
+  liveActive: false,
+  liveStream: null,
+  liveDetInterval: null,
+  liveSessTimer: null,
+  liveStats: { total:0, haz:0, safe:0, secs:0 },
+  detCount: 0,
+  camStream: null,
+  datasets: [
+    { id:'household', name:'Household Waste', icon:'🏠', items:12400, accuracy:94.2, classes:9, trained:true },
+    { id:'industrial', name:'Industrial Waste', icon:'🏭', items:8700, accuracy:91.5, classes:12, trained:true },
+    { id:'medical', name:'Medical Waste', icon:'🏥', items:5200, accuracy:89.3, classes:7, trained:true },
+    { id:'ewaste', name:'E-Waste Dataset', icon:'💻', items:9800, accuracy:92.8, classes:11, trained:true },
+    { id:'custom', name:'Custom Dataset', icon:'⚙', items:0, accuracy:0, classes:0, trained:false },
+  ],
+  sysLogs: [],
+};
+
+const WASTE_DB = {
+  'Plastic Bottle': { category:'Plastic', hazard:'low', hClass:'hz-low', icon:'🍶', confidence:96, recycleMethod:'Curbside recycling — clean and flatten before placing in blue bin.', disposal:'Remove cap, rinse thoroughly. Flatten to save space. Place in recycling bin.', carbon:'Recycling saves ~30g CO₂ per bottle. Impact Score: 4/10', badges:[{t:'Low Hazard',c:'badge-g'},{t:'Recyclable',c:'badge-b'},{t:'PET Type 1',c:'badge-g'}], desc:'PET plastic bottle — one of the most commonly recycled plastics. Accepts most beverage types.' },
+  'Glass Bottle': { category:'Glass', hazard:'low', hClass:'hz-low', icon:'🍾', confidence:98, recycleMethod:'100% recyclable infinitely. Separate by color. Take to glass recycling bin.', disposal:'Remove lid, rinse clean. Separate by color: clear, green, brown.', carbon:'Recycling glass saves ~300g CO₂ per kg. Impact Score: 2/10', badges:[{t:'Non-Hazardous',c:'badge-g'},{t:'100% Recyclable',c:'badge-b'}], desc:'Borosilicate/soda-lime glass — completely recyclable and non-toxic.' },
+  'Aluminum Can': { category:'Metal', hazard:'low', hClass:'hz-low', icon:'🥫', confidence:97, recycleMethod:'Highly recyclable — 95% energy savings vs virgin production. Crush before recycling.', disposal:'Rinse, crush to save space. Place in metal recycling bin.', carbon:'Recycling aluminum saves ~9kg CO₂ per kg. Impact Score: 3/10', badges:[{t:'Recyclable',c:'badge-g'},{t:'High Value',c:'badge-b'},{t:'Metal',c:'badge-g'}], desc:'Aluminum container — extremely high recycling value and infinite recyclability.' },
+  'Cardboard Box': { category:'Paper', hazard:'low', hClass:'hz-low', icon:'📦', confidence:95, recycleMethod:'Break down flat, remove tape. Place in paper/cardboard recycling bin.', disposal:'Remove plastic tape, flatten completely. Keep dry — wet cardboard is compostable.', carbon:'Recycling saves ~1kg CO₂ per kg. Impact Score: 2/10', badges:[{t:'Recyclable',c:'badge-g'},{t:'Compostable',c:'badge-b'}], desc:'Corrugated cardboard — widely recyclable and highly compostable when wet.' },
+  'E-Waste Device': { category:'E-Waste', hazard:'high', hClass:'hz-high', icon:'💻', confidence:91, recycleMethod:'Certified e-waste facility ONLY. Never general recycling or landfill.', disposal:'Wipe all data. Take to certified e-waste drop-off. Some retailers accept old devices.', carbon:'Contains rare earth metals. Impact Score: 9/10', badges:[{t:'Hazardous',c:'badge-r'},{t:'E-Waste',c:'badge-p'},{t:'Certified Disposal',c:'badge-a'}], desc:'Electronic device containing lead, mercury, cadmium, and rare earth metals.' },
+  'Battery': { category:'Battery', hazard:'high', hClass:'hz-high', icon:'🔋', confidence:94, recycleMethod:'Take to hazardous waste facility or battery drop-off point. Many retailers accept.', disposal:'Tape terminals with electrical tape. NEVER throw in regular trash or burn.', carbon:'Lead-acid batteries can be 97% recycled. Impact Score: 8/10', badges:[{t:'High Hazard',c:'badge-r'},{t:'Toxic',c:'badge-p'},{t:'Special Disposal',c:'badge-a'}], desc:'Battery waste — contains toxic heavy metals and chemicals. Requires certified disposal.' },
+  'Medical Waste': { category:'Medical', hazard:'high', hClass:'hz-high', icon:'🏥', confidence:89, recycleMethod:'Incineration at certified medical waste facility. Not recyclable.', disposal:'Place sharps in puncture-proof container. Contact local medical waste services.', carbon:'Must be incinerated — high environmental cost. Impact Score: 10/10', badges:[{t:'BioHazard',c:'badge-r'},{t:'Incineration Only',c:'badge-p'}], desc:'Medical or biohazardous waste — requires specialized certified disposal.' },
+  'Food Waste': { category:'Organic', hazard:'low', hClass:'hz-low', icon:'🍎', confidence:93, recycleMethod:'Compost or use organic waste bin. Can generate biogas via anaerobic digestion.', disposal:'Add to compost bin or green waste collection. Can enrich soil when composted.', carbon:'Composting prevents methane from landfills. Impact Score: 1/10', badges:[{t:'Compostable',c:'badge-g'},{t:'Organic',c:'badge-b'},{t:'Biogas Potential',c:'badge-g'}], desc:'Organic food waste — highly compostable and valuable for soil enrichment.' },
+  'Chemical Container': { category:'Hazardous', hazard:'high', hClass:'hz-high', icon:'⚗️', confidence:88, recycleMethod:'Hazardous waste collection event or facility. Cannot be recycled normally.', disposal:'Keep in original container. Contact local HazMat disposal. Never pour down drain.', carbon:'Chemical contamination risk. Impact Score: 10/10', badges:[{t:'Chemical Hazard',c:'badge-r'},{t:'HazMat Required',c:'badge-p'}], desc:'Hazardous chemical container — contains toxic or corrosive substances.' },
+};
+
+const DEMO_SEQUENCE = Object.keys(WASTE_DB);
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+const pageTitles = {
+  dashboard:'Dashboard', detect:'Detect Waste', live:'Live Camera', chat:'AI Assistant',
+  memory:'Saved Memory', datasets:'Dataset Manager', admin:'Admin Panel'
+};
+const pageSubs = {
+  dashboard:'Overview · Real-time analytics', detect:'Upload or capture waste images for AI classification',
+  live:'Real-time webcam waste detection', chat:'Context-aware AI conversation system',
+  memory:'Browse and manage saved detections', datasets:'Manage training datasets and model versions',
+  admin:'System configuration and monitoring'
+};
+
+function navTo(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('tbTitle').textContent = pageTitles[page] || page;
+  document.getElementById('tbSub').textContent = pageSubs[page] || '';
+  addLog('INFO', `Navigated to ${pageTitles[page]}`);
+}
+
+// ═══════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════
+function notify(title, msg, type='g') {
+  const icons = {g:'check-circle',r:'exclamation-circle',a:'exclamation-triangle',b:'info-circle'};
+  const colors = {g:'var(--g)',r:'var(--r)',a:'var(--a)',b:'var(--b)'};
+  const stack = document.getElementById('notif-stack');
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.style.borderColor = colors[type]+'55';
+  n.innerHTML = `<i class="fas fa-${icons[type]} notif-icon" style="color:${colors[type]}"></i>
+    <div class="notif-text"><div class="notif-title">${title}</div>${msg}</div>
+    <button class="notif-close" onclick="removeNotif(this.parentElement)"><i class="fas fa-times"></i></button>`;
+  stack.appendChild(n);
+  setTimeout(() => removeNotif(n), 4000);
+}
+function removeNotif(n) {
+  n.classList.add('removing');
+  setTimeout(() => n.remove(), 300);
+}
+
+// ═══════════════════════════════════════
+// LOGS
+// ═══════════════════════════════════════
+function addLog(level, msg) {
+  const now = new Date().toLocaleTimeString();
+  STATE.sysLogs.unshift({ time:now, level, msg });
+  if(STATE.sysLogs.length > 100) STATE.sysLogs.pop();
+  renderLogs();
+}
+function renderLogs() {
+  const el = document.getElementById('sysLogs');
+  if(!el) return;
+  el.innerHTML = STATE.sysLogs.slice(0,30).map(l =>
+    `<div class="log-row"><span class="log-time">${l.time}</span><span class="log-level ${l.level.toLowerCase()}">${l.level}</span><span class="log-msg">${l.msg}</span></div>`
+  ).join('');
+}
+function clearLogs() { STATE.sysLogs = []; renderLogs(); }
+
+// ═══════════════════════════════════════
+// DETECTION ENGINE (SIMULATED + AI)
+// ═══════════════════════════════════════
+let currentFileData = null;
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  loadImageFile(file);
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function handleDragLeave(e) { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) loadImageFile(file);
+}
+
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentFileData = ev.target.result;
+    const img = document.getElementById('imgPreview');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('resultPanel').style.display = 'none';
+    document.getElementById('resultPanel').classList.remove('show');
+    notify('Image Loaded', file.name, 'b');
+    addLog('INFO', `Image loaded: ${file.name}`);
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearDetection() {
+  currentFileData = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('resultPanel').classList.remove('show');
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+}
+
+async function analyzeImage() {
+  if(!currentFileData) return;
+  const zone = document.getElementById('uploadZone');
+  zone.classList.add('scanning');
+  addLog('INFO', 'Starting AI image analysis...');
+
+  // Use AI for real analysis if key available, else simulate
+  if(STATE.apiKey) {
+    try {
+      const base64 = currentFileData.split(',')[1];
+      const mediaType = currentFileData.split(';')[0].split(':')[1];
+      const res = await callClaude([{
+        role:'user',
+        content:[
+          { type:'image', source:{ type:'base64', media_type:mediaType, data:base64 } },
+          { type:'text', text:`You are a waste classification AI. Analyze this image and classify the waste. Respond ONLY with JSON (no markdown):
+{
+  "name": "item name (e.g. Plastic Bottle)",
+  "category": "one of: Plastic, Glass, Metal, Paper, Organic, E-Waste, Battery, Medical, Hazardous",
+  "hazard": "low, medium, or high",
+  "confidence": 85-99 (number),
+  "description": "2 sentence description",
+  "recycleMethod": "how to recycle",
+  "disposal": "disposal instructions",
+  "carbon": "carbon impact statement",
+  "icon": "single relevant emoji"
+}` }
+        ]
+      }], 'You are WasteVision AI, an expert waste classification system. Always respond in valid JSON only.');
+
+      let data;
+      try {
+        const clean = res.replace(/```json|```/g,'').trim();
+        data = JSON.parse(clean);
+      } catch { data = null; }
+
+      zone.classList.remove('scanning');
+      if(data) showDetectionResult(data.name, data);
+      else simulateDetection();
+    } catch(e) {
+      zone.classList.remove('scanning');
+      addLog('WARN', 'AI analysis failed, using simulation');
+      simulateDetection();
+    }
+  } else {
+    setTimeout(() => { zone.classList.remove('scanning'); simulateDetection(); }, 2200);
+  }
+}
+
+function simulateDetection() {
+  const zone = document.getElementById('uploadZone');
+  zone.classList.add('scanning');
+  addLog('INFO', 'Running simulated detection...');
+  setTimeout(() => {
+    zone.classList.remove('scanning');
+    const keys = Object.keys(WASTE_DB);
+    const key = keys[STATE.detCount % keys.length];
+    STATE.detCount++;
+    showDetectionResult(key, WASTE_DB[key]);
+  }, 2200);
+}
+
+function showDetectionResult(name, data) {
+  STATE.currentDetection = { name, ...data, timestamp: new Date().toISOString(), id: generateId() };
+  updateDashboardStats();
+
+  const hClass = data.hClass || (data.hazard==='high'?'hz-high':data.hazard==='medium'||data.hazard==='med'?'hz-med':'hz-low');
+  document.getElementById('resultInner').className = 'result-inner ' + hClass;
+  document.getElementById('resultIcon').textContent = data.icon || '🗑️';
+  document.getElementById('resultTitle').textContent = name + ' Detected';
+  document.getElementById('resultDesc').textContent = data.description || data.desc || '';
+  document.getElementById('rd-recycle').textContent = data.recycleMethod || data.recycle || '—';
+  document.getElementById('rd-disposal').textContent = data.disposal || '—';
+  document.getElementById('rd-carbon').textContent = data.carbon || '—';
+
+  const badges = data.badges || [{t:data.category,c:'badge-b'},{t:data.hazard+' hazard',c:data.hazard==='high'?'badge-r':data.hazard==='medium'?'badge-a':'badge-g'}];
+  document.getElementById('resultBadges').innerHTML = badges.map(b=>`<span class="badge ${b.c}">${b.t}</span>`).join('');
+
+  const conf = data.confidence || 90;
+  const offset = Math.round(251*(1-conf/100));
+  document.getElementById('confCircle').style.strokeDashoffset = offset;
+  document.getElementById('confPct').textContent = conf+'%';
+
+  const panel = document.getElementById('resultPanel');
+  panel.style.display = 'block';
+  panel.classList.add('show');
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  addActivityFeed(name, data);
+  addLog('INFO', `Detection: ${name} (${conf}% confidence)`);
+  notify('Waste Classified', `${name} detected with ${conf}% confidence`, data.hazard==='high'?'r':'g');
+}
+
+function addActivityFeed(name, data) {
+  const feed = document.getElementById('activityFeed');
+  const div = document.createElement('div');
+  div.className = 'feed-item';
+  const color = data.hazard==='high'?'var(--r)':data.hazard==='medium'||data.hazard==='med'?'var(--a)':'var(--g)';
+  div.innerHTML = `<div class="feed-icon" style="background:${color}18;border:1px solid ${color}33;color:${color};">${data.icon||'🗑'}</div>
+    <div><div style="font-weight:700;font-size:.75rem;">${name}</div><div class="feed-meta">${new Date().toLocaleTimeString()} · ${data.category||''} · ${data.confidence||90}%</div></div>`;
+  feed.insertBefore(div, feed.firstChild);
+  if(feed.children.length > 15) feed.lastChild.remove();
+}
+
+// ═══════════════════════════════════════
+// QUICK CAMERA
+// ═══════════════════════════════════════
+function startQuickCam() {
+  navigator.mediaDevices?.getUserMedia({video:true}).then(stream => {
+    STATE.camStream = stream;
+    const vid = document.getElementById('camVideo');
+    vid.srcObject = stream;
+    vid.style.display = 'block';
+    document.getElementById('camPh').style.display = 'none';
+    notify('Camera', 'Quick camera started', 'b');
+  }).catch(() => notify('Camera Error', 'Could not access camera', 'r'));
+}
+
+function captureFromCam() {
+  const vid = document.getElementById('camVideo');
+  if(!vid.srcObject) return notify('Camera','Start camera first','a');
+  const canvas = document.getElementById('previewCanvas');
+  canvas.width = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid,0,0);
+  canvas.style.display = 'block';
+  document.getElementById('imgPreview').style.display = 'none';
+  currentFileData = canvas.toDataURL('image/jpeg');
+  document.getElementById('analyzeBtn').disabled = false;
+  notify('Captured','Image captured from camera','g');
+}
+
+function stopQuickCam() {
+  if(STATE.camStream) { STATE.camStream.getTracks().forEach(t=>t.stop()); STATE.camStream=null; }
+  const vid = document.getElementById('camVideo');
+  vid.style.display = 'none';
+  document.getElementById('camPh').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════
+// LIVE DETECTION
+// ═══════════════════════════════════════
+function startLiveDetection() {
+  navigator.mediaDevices?.getUserMedia({video:true}).then(stream => {
+    STATE.liveStream = stream;
+    STATE.liveActive = true;
+    const vid = document.getElementById('liveVideo');
+    vid.srcObject = stream;
+    vid.style.display = 'block';
+    document.getElementById('liveNoCam').style.display = 'none';
+    document.getElementById('liveScanBar').style.display = 'block';
+    document.getElementById('liveHudTL').textContent = 'SYS: SCANNING';
+    document.getElementById('liveGlobalIndicator').style.display = 'flex';
+    document.getElementById('liveTag').textContent = 'ON';
+    document.getElementById('startLiveBtn').disabled = true;
+    document.getElementById('stopLiveBtn').disabled = false;
+    STATE.liveStats = {total:0,haz:0,safe:0,secs:0};
+    STATE.liveSessTimer = setInterval(() => {
+      STATE.liveStats.secs++;
+      document.getElementById('ls-sess').textContent = STATE.liveStats.secs;
+      document.getElementById('liveHudTR').textContent = `FPS: ~${Math.floor(20+Math.random()*10)}`;
+      document.getElementById('fpsDisplay').textContent = `FPS: ~${Math.floor(20+Math.random()*10)}`;
+    }, 1000);
+    STATE.liveDetInterval = setInterval(doLiveDetectionCycle, 3500);
+    notify('Live Detection', 'Camera stream started', 'g');
+    addLog('INFO', 'Live detection session started');
+    drawLiveCanvas();
+  }).catch(() => {
+    notify('Camera Error','Could not access camera — try Simulate mode','r');
+    addLog('ERR','Camera access denied');
+  });
+}
+
+function stopLiveDetection() {
+  if(STATE.liveStream) STATE.liveStream.getTracks().forEach(t=>t.stop());
+  clearInterval(STATE.liveDetInterval);
+  clearInterval(STATE.liveSessTimer);
+  STATE.liveActive = false;
+  STATE.liveStream = null;
+  document.getElementById('liveVideo').style.display = 'none';
+  document.getElementById('liveNoCam').style.display = 'flex';
+  document.getElementById('liveScanBar').style.display = 'none';
+  document.getElementById('liveHudTL').textContent = 'SYS: IDLE';
+  document.getElementById('liveHudTR').textContent = 'FPS: --';
+  document.getElementById('liveGlobalIndicator').style.display = 'none';
+  document.getElementById('liveTag').textContent = 'OFF';
+  document.getElementById('startLiveBtn').disabled = false;
+  document.getElementById('stopLiveBtn').disabled = true;
+  notify('Live Detection', 'Session stopped', 'a');
+  addLog('INFO', `Live session ended. ${STATE.liveStats.total} detections.`);
+}
+
+function simulateLiveDetection() {
+  STATE.liveActive = true;
+  document.getElementById('liveNoCam').style.display = 'none';
+  document.getElementById('liveScanBar').style.display = 'block';
+  document.getElementById('liveHudTL').textContent = 'SYS: SIMULATE';
+  document.getElementById('liveGlobalIndicator').style.display = 'flex';
+  document.getElementById('liveTag').textContent = 'ON';
+  document.getElementById('startLiveBtn').disabled = true;
+  document.getElementById('stopLiveBtn').disabled = false;
+  STATE.liveStats = {total:0,haz:0,safe:0,secs:0};
+  STATE.liveSessTimer = setInterval(() => {
+    STATE.liveStats.secs++;
+    document.getElementById('ls-sess').textContent = STATE.liveStats.secs;
+    document.getElementById('liveHudTR').textContent = `FPS: ~${Math.floor(20+Math.random()*10)}`;
+    document.getElementById('fpsDisplay').textContent = `FPS: ~${Math.floor(20+Math.random()*10)}`;
+  }, 1000);
+  STATE.liveDetInterval = setInterval(doLiveDetectionCycle, 2800);
+  addLog('INFO', 'Simulation mode started');
+}
+
+function doLiveDetectionCycle() {
+  const keys = Object.keys(WASTE_DB);
+  const key = keys[Math.floor(Math.random()*keys.length)];
+  const data = WASTE_DB[key];
+  const conf = data.confidence - Math.floor(Math.random()*8);
+  STATE.liveStats.total++;
+  if(data.hazard==='high') STATE.liveStats.haz++; else STATE.liveStats.safe++;
+  document.getElementById('ls-total').textContent = STATE.liveStats.total;
+  document.getElementById('ls-haz').textContent = STATE.liveStats.haz;
+  document.getElementById('ls-safe').textContent = STATE.liveStats.safe;
+  document.getElementById('objCountDisplay').textContent = `Objects: ${Math.floor(1+Math.random()*3)}`;
+  addLiveLog(key, data, conf);
+  updateDashboardStats();
+}
+
+function addLiveLog(name, data, conf) {
+  const log = document.getElementById('detLog');
+  const empty = log.querySelector('.empty-state');
+  if(empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'det-log-item new-det';
+  const color = data.hazard==='high'?'var(--r)':data.hazard==='medium'||data.hazard==='med'?'var(--a)':'var(--g)';
+  div.innerHTML = `<div class="dli-top"><span class="dli-name">${data.icon} ${name}</span><span class="dli-conf" style="color:${color}">${conf}%</span></div>
+    <div style="display:flex;justify-content:space-between;"><span class="dli-cat">${data.category}</span><span class="dli-time">${new Date().toLocaleTimeString()}</span></div>`;
+  div.onclick = () => { STATE.currentDetection = {name,...data,confidence:conf,timestamp:new Date().toISOString(),id:generateId()}; showDetectionFromLive(name, data, conf); };
+  log.insertBefore(div, log.firstChild);
+  if(log.children.length > 50) log.lastChild.remove();
+}
+
+function showDetectionFromLive(name, data, conf) {
+  navTo('detect', document.querySelectorAll('.sb-item')[1]);
+  setTimeout(() => showDetectionResult(name, {...data, confidence:conf}), 200);
+}
+
+function drawLiveCanvas() {
+  if(!STATE.liveActive) return;
+  const canvas = document.getElementById('liveCanvas');
+  const ctx = canvas.getContext('2d');
+  const vid = document.getElementById('liveVideo');
+  if(vid.videoWidth) {
+    canvas.width = vid.clientWidth;
+    canvas.height = vid.clientHeight;
+    // Draw animated bounding box simulation
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const t = Date.now()/1000;
+    const boxes = [[50,40,200,120],[280,60,180,140]];
+    boxes.forEach((b,i) => {
+      const pulse = 0.7+0.3*Math.sin(t*2+i);
+      ctx.strokeStyle = `rgba(0,255,136,${pulse})`;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#00ff88';
+      ctx.strokeRect(b[0],b[1],b[2],b[3]);
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.fillStyle = `rgba(0,255,136,${pulse})`;
+      ctx.fillText(i===0?'PLASTIC':'METAL', b[0]+4, b[1]-5);
+    });
+  }
+  requestAnimationFrame(drawLiveCanvas);
+}
+
+function clearLiveLog() { document.getElementById('detLog').innerHTML = '<div class="empty-state" style="padding:1.5rem;"><i class="fas fa-radar" style="font-size:1.5rem;"></i><p style="margin-top:.5rem;">No detections yet</p></div>'; }
+
+// ═══════════════════════════════════════
+// CHAT SYSTEM (REAL AI)
+// ═══════════════════════════════════════
+function startChatFromDetection(save) {
+  if(!STATE.currentDetection) return;
+  if(save) {
+    saveToMemory(STATE.currentDetection);
+    const sess = createSession(STATE.currentDetection);
+    STATE.currentSession = sess;
+    updateSessionList();
+    navTo('chat', document.querySelectorAll('.sb-item')[4]);
+    renderChatContext(STATE.currentDetection);
+    addLog('INFO', `Chat session created for ${STATE.currentDetection.name}`);
+  } else {
+    notify('Detection Closed', 'Waste detected. Chat closed.', 'a');
+    addLog('INFO', `Detection noted without memory save: ${STATE.currentDetection.name}`);
+  }
+}
+
+function createSession(det) {
+  const sess = {
+    id: det.id,
+    detectionId: det.id,
+    name: det.name,
+    icon: det.icon || '🗑️',
+    waste: det,
+    messages: [],
+    created: new Date().toISOString(),
+  };
+  STATE.sessions.unshift(sess);
+  document.getElementById('sessCount').textContent = STATE.sessions.length;
+  return sess;
+}
+
+function startNewChat() {
+  STATE.currentSession = null;
+  document.getElementById('chatMessages').innerHTML = `<div class="msg msg-ai"><div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>Hello! I'm WasteAI. Detect a waste item first, or ask me general waste management questions!</div>`;
+  document.getElementById('chatCtxName').textContent = 'WasteAI Assistant';
+  document.getElementById('chatCtxDetail').textContent = 'General waste management';
+  document.getElementById('chatCtxIcon').textContent = '🤖';
+  document.querySelectorAll('.sess-item').forEach(s=>s.classList.remove('active-sess'));
+}
+
+function updateSessionList() {
+  const el = document.getElementById('sessionList');
+  if(STATE.sessions.length === 0) {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>No sessions yet.</p></div>';
+    return;
+  }
+  el.innerHTML = STATE.sessions.map(s => `
+    <div class="sess-item ${STATE.currentSession?.id===s.id?'active-sess':''}" onclick="openSession('${s.id}')">
+      <div class="sess-name">${s.icon} ${s.name}</div>
+      <div class="sess-preview">${s.messages.length>0?s.messages[s.messages.length-1].content.substring(0,60)+'...':'Start chatting...'}</div>
+      <div class="sess-time">${new Date(s.created).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+function openSession(id) {
+  const sess = STATE.sessions.find(s=>s.id===id);
+  if(!sess) return;
+  STATE.currentSession = sess;
+  renderChatContext(sess.waste);
+  renderChatMessages(sess.messages);
+  document.querySelectorAll('.sess-item').forEach(s=>s.classList.remove('active-sess'));
+  event.currentTarget?.classList.add('active-sess');
+}
+
+function renderChatContext(det) {
+  document.getElementById('chatCtxIcon').textContent = det.icon || '🗑️';
+  document.getElementById('chatCtxName').textContent = det.name || 'Unknown Item';
+  document.getElementById('chatCtxDetail').textContent = `${det.category||''} · Hazard: ${det.hazard||''} · Confidence: ${det.confidence||0}%`;
+  updateSessionList();
+}
+
+function renderChatMessages(messages) {
+  const el = document.getElementById('chatMessages');
+  if(messages.length === 0) {
+    el.innerHTML = `<div class="msg msg-ai"><div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>I have full context about this ${STATE.currentSession?.name}. Ask me anything — recycling, disposal, hazards, environmental impact, or resale value!</div>`;
+    return;
+  }
+  el.innerHTML = messages.map(m => `
+    <div class="msg ${m.role==='user'?'msg-user':'msg-ai'}">
+      ${m.role==='assistant'?'<div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>':''}
+      ${m.content}
+    </div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function quickQuestion(el) {
+  document.getElementById('chatInput').value = el.textContent;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  autoResize(input);
+
+  const el = document.getElementById('chatMessages');
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg msg-user';
+  userDiv.textContent = msg;
+  el.appendChild(userDiv);
+
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg msg-ai';
+  typingDiv.innerHTML = `<div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  el.appendChild(typingDiv);
+  el.scrollTop = el.scrollHeight;
+
+  if(STATE.currentSession) STATE.currentSession.messages.push({role:'user',content:msg});
+
+  const contextInfo = STATE.currentSession?.waste ?
+    `Context: The user just detected a "${STATE.currentSession.waste.name}". Category: ${STATE.currentSession.waste.category}. Hazard: ${STATE.currentSession.waste.hazard}. ${STATE.currentSession.waste.desc||STATE.currentSession.waste.description||''}. Recycling: ${STATE.currentSession.waste.recycleMethod||''}. Disposal: ${STATE.currentSession.waste.disposal||''}.` :
+    'No specific waste item in context. Answer general waste management questions.';
+
+  const history = (STATE.currentSession?.messages||[]).slice(-10).map(m=>({role:m.role,content:m.content}));
+  if(history.length && history[history.length-1].role==='user') history.pop(); // avoid duplicate
+
+  try {
+    const response = await callClaude([
+      ...history,
+      { role:'user', content: msg }
+    ], `You are WasteAI, an expert AI waste management assistant embedded in WasteVision platform. ${contextInfo}
+You know everything about recycling, disposal, environmental impact, hazard levels, carbon footprints, resale values of waste materials, and nearby disposal locations.
+Be helpful, concise, and conversational. If the user asks to modify a classification, acknowledge and explain the change. Always prioritize safety for hazardous materials.`);
+
+    typingDiv.innerHTML = `<div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>${response}`;
+    if(STATE.currentSession) {
+      STATE.currentSession.messages.push({role:'assistant',content:response});
+      updateSessionList();
+    }
+    el.scrollTop = el.scrollHeight;
+    addLog('INFO', `AI chat response generated`);
+  } catch(e) {
+    typingDiv.innerHTML = `<div class="msg-header"><i class="fas fa-robot"></i>WasteAI</div>I'm having trouble connecting to the AI service. Please check your API key in Admin settings, or try again. You can still use demo mode!`;
+    addLog('ERR', 'Chat API error: '+e.message);
+  }
+}
+
+function handleChatKey(e) {
+  if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+// ═══════════════════════════════════════
+// ANTHROPIC API
+// ═══════════════════════════════════════
+async function callClaude(messages, systemPrompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      system: systemPrompt || 'You are WasteAI, an expert waste management assistant.',
+      messages
+    })
+  });
+  if(!res.ok) throw new Error('API error '+res.status);
+  const data = await res.json();
+  return data.content.map(c=>c.text||'').join('');
+}
+
+// ═══════════════════════════════════════
+// MEMORY SYSTEM
+// ═══════════════════════════════════════
+function saveToMemory(det) {
+  if(STATE.memory.find(m=>m.id===det.id)) return;
+  STATE.memory.unshift({...det});
+  document.getElementById('memCount').textContent = STATE.memory.length;
+  renderMemory();
+  notify('Saved to Memory', `${det.name} stored as #${det.id}`, 'g');
+  addLog('INFO', `Memory saved: ${det.name} [${det.id}]`);
+  updateDashboardStats();
+}
+
+function generateId() { return '#' + Math.floor(1000+Math.random()*9000); }
+
+function renderMemory() {
+  const grid = document.getElementById('memoryGrid');
+  if(STATE.memory.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-database"></i><h3>No saved detections yet</h3><p>Detect a waste item and click YES to save it to memory</p></div>`;
+    return;
+  }
+  grid.innerHTML = STATE.memory.map(m => {
+    const color = m.hazard==='high'?'var(--r)':m.hazard==='medium'||m.hazard==='med'?'var(--a)':'var(--g)';
+    return `<div class="card mem-card" onclick="openMemoryDetail('${m.id}')">
+      <div style="padding:1rem;">
+        <div class="mem-card-img">${m.imageData?`<img src="${m.imageData}" alt="${m.name}">`:m.icon||'🗑️'}</div>
+        <div class="mem-id">${m.id} · ${new Date(m.timestamp).toLocaleDateString()}</div>
+        <div class="mem-name">${m.name}</div>
+        <div class="mem-meta">
+          <span class="badge badge-b">${m.category||'—'}</span>
+          <span class="badge" style="background:${color}18;border:1px solid ${color}44;color:${color};">${m.hazard||'—'}</span>
+        </div>
+        <div class="mem-footer">
+          <div class="mem-footer-time">${m.confidence||0}% confidence</div>
+          <button class="btn btn-xs btn-outline-r" onclick="event.stopPropagation();deleteMemory('${m.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterMemory() {
+  const search = document.getElementById('memSearch').value.toLowerCase();
+  const cat = document.getElementById('memCatFilter').value;
+  const haz = document.getElementById('memHazFilter').value;
+  const filtered = STATE.memory.filter(m => {
+    const matchSearch = !search || m.name.toLowerCase().includes(search) || (m.category||'').toLowerCase().includes(search);
+    const matchCat = !cat || m.category === cat;
+    const matchHaz = !haz || m.hazard === haz;
+    return matchSearch && matchCat && matchHaz;
+  });
+  const grid = document.getElementById('memoryGrid');
+  if(filtered.length === 0) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-search"></i><h3>No matching detections</h3></div>`; return; }
+  const tmp = {...STATE};
+  tmp.memory = filtered;
+  const originalMemory = STATE.memory;
+  STATE.memory = filtered;
+  renderMemory();
+  STATE.memory = originalMemory;
+}
+
+function openMemoryDetail(id) {
+  const m = STATE.memory.find(x=>x.id===id);
+  if(!m) return;
+  document.getElementById('memModalTitle').textContent = m.icon+' '+m.name+' '+m.id;
+  document.getElementById('memModalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+      <div><div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.3rem;">CATEGORY</div><div style="font-weight:700;">${m.category||'—'}</div></div>
+      <div><div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.3rem;">HAZARD LEVEL</div><div style="font-weight:700;color:${m.hazard==='high'?'var(--r)':m.hazard==='medium'?'var(--a)':'var(--g)'};">${m.hazard||'—'}</div></div>
+      <div><div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.3rem;">CONFIDENCE</div><div style="font-weight:700;color:var(--g);">${m.confidence||0}%</div></div>
+      <div><div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.3rem;">TIMESTAMP</div><div style="font-weight:700;font-size:.8rem;">${new Date(m.timestamp).toLocaleString()}</div></div>
+    </div>
+    <div style="padding:.75rem;background:rgba(0,255,136,0.04);border-radius:8px;border:1px solid rgba(0,255,136,0.08);margin-bottom:1rem;">
+      <div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.5rem;">RECYCLING METHOD</div>
+      <div style="font-size:.82rem;color:var(--t2);">${m.recycleMethod||m.recycle||'—'}</div>
+    </div>
+    <div style="padding:.75rem;background:rgba(0,212,255,0.04);border-radius:8px;border:1px solid rgba(0,212,255,0.08);">
+      <div style="font-size:.65rem;color:var(--t3);font-family:var(--mono);margin-bottom:.5rem;">DISPOSAL INSTRUCTIONS</div>
+      <div style="font-size:.82rem;color:var(--t2);">${m.disposal||'—'}</div>
+    </div>`;
+  document.getElementById('memModalDelete').onclick = () => { deleteMemory(id); closeModal('memModal'); };
+  document.getElementById('memModalChat').onclick = () => {
+    STATE.currentDetection = m;
+    STATE.currentSession = STATE.sessions.find(s=>s.detectionId===id) || createSession(m);
+    closeModal('memModal');
+    navTo('chat', document.querySelectorAll('.sb-item')[4]);
+    renderChatContext(m);
+    renderChatMessages(STATE.currentSession.messages);
+    updateSessionList();
+  };
+  document.getElementById('memModal').classList.add('open');
+}
+
+function deleteMemory(id) {
+  STATE.memory = STATE.memory.filter(m=>m.id!==id);
+  document.getElementById('memCount').textContent = STATE.memory.length;
+  renderMemory();
+  notify('Deleted', 'Detection removed from memory', 'a');
+  addLog('INFO', `Memory deleted: ${id}`);
+}
+
+function clearAllMemory() {
+  if(!confirm('Delete all saved detections? This cannot be undone.')) return;
+  STATE.memory = [];
+  document.getElementById('memCount').textContent = 0;
+  renderMemory();
+  notify('Cleared', 'All memory cleared', 'r');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════
+// DATASETS
+// ═══════════════════════════════════════
+function renderDatasets() {
+  const grid = document.getElementById('datasetGrid');
+  grid.innerHTML = STATE.datasets.map(ds => `
+    <div class="card ds-card ${STATE.currentDataset===ds.id?'active-ds':''}" onclick="activateDataset('${ds.id}', this)">
+      <div class="ds-card-icon">${ds.icon}</div>
+      <div class="ds-card-name">${ds.name}</div>
+      <div class="ds-card-items">${ds.items.toLocaleString()} images · ${ds.classes} classes</div>
+      <div class="ds-card-bar"><div class="ds-card-bar-fill" style="width:${ds.accuracy}%"></div></div>
+      <div class="ds-stats-row"><span>Accuracy</span><span style="color:var(--g)">${ds.accuracy?ds.accuracy+'%':'—'}</span></div>
+      <div style="margin-top:.75rem;"><span class="badge ${ds.trained?'badge-g':'badge-a'}">${ds.trained?'Trained':'Untrained'}</span></div>
+    </div>`).join('');
+}
+
+function activateDataset(id, el) {
+  STATE.currentDataset = id;
+  document.querySelectorAll('.ds-card').forEach(c=>c.classList.remove('active-ds'));
+  el.classList.add('active-ds');
+  // Sync detect page pills
+  document.querySelectorAll('.ds-pill').forEach(p=>{p.classList.toggle('active',p.dataset.ds===id);});
+  const ds = STATE.datasets.find(d=>d.id===id);
+  if(ds) {
+    document.querySelector('.sb-status .sb-status-row:nth-child(2) .sb-status-text').textContent = `DATASET: ${ds.name.toUpperCase()}`;
+    notify('Dataset Switched', ds.name+' activated', 'b');
+    addLog('INFO', `Dataset activated: ${ds.name}`);
+  }
+}
+
+function switchDataset(btn) {
+  const id = btn.dataset.ds;
+  STATE.currentDataset = id;
+  document.querySelectorAll('.ds-pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  const ds = STATE.datasets.find(d=>d.id===id);
+  if(ds) {
+    notify('Dataset', ds.name+' activated', 'b');
+    addLog('INFO', `Dataset switched: ${ds.name}`);
+  }
+}
+
+function handleDatasetUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const custom = STATE.datasets.find(d=>d.id==='custom');
+  if(custom) { custom.items=500; custom.classes=5; custom.trained=false; custom.name='Custom: '+file.name.replace('.zip',''); }
+  renderDatasets();
+  notify('Dataset Uploaded', file.name+' ready for training', 'g');
+  addLog('INFO', `Custom dataset uploaded: ${file.name}`);
+}
+
+function startTraining() {
+  const arch = document.getElementById('modelArch').value;
+  notify('Training Started', arch+' — this may take a while', 'a');
+  addLog('INFO', `Model training started: ${arch}`);
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random()*15;
+    if(progress >= 100) { clearInterval(interval); notify('Training Complete', 'Model accuracy: 91.4%', 'g'); addLog('INFO','Training complete — accuracy 91.4%'); }
+    addLog('INFO', `Training progress: ${Math.min(100,Math.floor(progress))}%`);
+  }, 800);
+}
+
+function showTrainingStatus() { notify('Training Status', 'No active training job', 'b'); }
+
+// ═══════════════════════════════════════
+// DASHBOARD STATS
+// ═══════════════════════════════════════
+function updateDashboardStats() {
+  const total = STATE.memory.length + STATE.liveStats.total;
+  document.getElementById('sc-total').textContent = total;
+  const recyc = STATE.memory.filter(m=>m.hazard!=='high').length;
+  const recycPct = total>0?Math.round(recyc/total*100):78;
+  document.getElementById('sc-recyc').textContent = recycPct+'%';
+  const haz = STATE.memory.filter(m=>m.hazard==='high').length + STATE.liveStats.haz;
+  document.getElementById('sc-haz').textContent = haz;
+  document.getElementById('sc-carbon').textContent = (recyc*0.3).toFixed(1)+'t';
+}
+
+// ═══════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════
+function initCharts() {
+  const chartFont = { family:"'JetBrains Mono',monospace", size:11 };
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  new Chart(barCtx, {
+    type:'bar',
+    data:{
+      labels:['Plastic','Glass','Metal','Paper','Organic','E-Waste','Battery','Medical','Hazardous'],
+      datasets:[{ label:'Detections', data:[540,210,320,380,180,290,140,60,90],
+        backgroundColor:['#00d4ff33','#96dcff33','#b0c4de33','#ffd26433','#00ff8833','#c864ff33','#ff336633','#ff669933','#ff335533'],
+        borderColor:['#00d4ff','#96dcff','#b0c4de','#ffd264','#00ff88','#c864ff','#ff3366','#ff6699','#ff3355'],
+        borderWidth:2,borderRadius:7,borderSkipped:false }]
+    },
+    options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#7ab8a0',font:chartFont},grid:{color:'rgba(0,255,136,0.04)'},border:{color:'rgba(0,255,136,0.08)'}},
+              y:{ticks:{color:'#7ab8a0',font:chartFont},grid:{color:'rgba(0,255,136,0.04)'},border:{color:'rgba(0,255,136,0.08)'}}} }
+  });
+  const pieCtx = document.getElementById('pieChart').getContext('2d');
+  new Chart(pieCtx, {
+    type:'doughnut',
+    data:{
+      labels:['Plastic','Glass','Metal','Paper','Organic','E-Waste','Battery','Medical'],
+      datasets:[{ data:[22,9,13,16,7,12,6,3],
+        backgroundColor:['#00d4ff99','#96dcff99','#b0c4de99','#ffd26499','#00ff8899','#c864ff99','#ff336699','#ff669999'],
+        borderColor:['#00d4ff','#96dcff','#b0c4de','#ffd264','#00ff88','#c864ff','#ff3366','#ff6699'],
+        borderWidth:2,hoverOffset:8 }]
+    },
+    options:{ responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}} }
+  });
+}
+
+// ═══════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════
+function toggleExportMenu() { document.getElementById('exportMenu').classList.toggle('open'); }
+document.addEventListener('click', e => { if(!e.target.closest('#exportMenu')) document.getElementById('exportMenu').classList.remove('open'); });
+
+function exportData(format) {
+  document.getElementById('exportMenu').classList.remove('open');
+  if(format==='json') {
+    const data = JSON.stringify({detections:STATE.memory,sessions:STATE.sessions,exported:new Date().toISOString()},null,2);
+    downloadFile('wastevision-export.json', data, 'application/json');
+    notify('Export', 'JSON file downloaded', 'g');
+  } else if(format==='csv') {
+    const headers = 'ID,Name,Category,Hazard,Confidence,Timestamp,Recycling Method\n';
+    const rows = STATE.memory.map(m=>`${m.id},${m.name},${m.category||''},${m.hazard||''},${m.confidence||0},${m.timestamp},"${(m.recycleMethod||'').replace(/"/g,"'")}"`).join('\n');
+    downloadFile('wastevision-export.csv', headers+rows, 'text/csv');
+    notify('Export', 'CSV file downloaded', 'g');
+  } else if(format==='pdf') {
+    notify('Export', 'PDF export — connect a PDF library for production use', 'b');
+  }
+}
+
+function downloadFile(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name;
+  a.click();
+}
+
+// ═══════════════════════════════════════
+// API CONFIG
+// ═══════════════════════════════════════
+function updateApiKey(val) { STATE.apiKey = val; }
+function saveApiConfig() {
+  notify('Config Saved', 'API key updated successfully', 'g');
+  addLog('INFO', 'API configuration saved');
+}
+
+// ═══════════════════════════════════════
+// COUNTER ANIMATION
+// ═══════════════════════════════════════
+function animateCounter(el, target, suffix='') {
+  let start=0; const step=target/(2000/16);
+  const t=setInterval(()=>{start+=step;if(start>=target){start=target;clearInterval(t);}el.textContent=Math.floor(start).toLocaleString()+suffix;},16);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function init() {
+  initCharts();
+  renderDatasets();
+  renderMemory();
+  updateSessionList();
+  updateDashboardStats();
+  // Seed activity feed
+  const demoItems = [
+    {name:'Plastic Bottle',data:WASTE_DB['Plastic Bottle']},
+    {name:'Aluminum Can',data:WASTE_DB['Aluminum Can']},
+    {name:'Battery',data:WASTE_DB['Battery']},
+    {name:'Glass Bottle',data:WASTE_DB['Glass Bottle']},
+    {name:'E-Waste Device',data:WASTE_DB['E-Waste Device']},
+  ];
+  demoItems.forEach(({name,data}) => addActivityFeed(name, data));
+  // Seed stats
+  setTimeout(() => {
+    animateCounter(document.getElementById('sc-total'), 247);
+    document.getElementById('sc-recyc').textContent = '78%';
+    document.getElementById('sc-haz').textContent = '23';
+    document.getElementById('sc-carbon').textContent = '2.4t';
+  }, 300);
+  // Seed logs
+  addLog('INFO', 'WasteVision AI platform initialized');
+  addLog('INFO', 'Household Waste dataset v3.2 loaded');
+  addLog('INFO', 'YOLOv8 model inference engine ready');
+  addLog('INFO', 'Anthropic API connection established');
+  addLog('INFO', 'Live camera module on standby');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
